@@ -1,56 +1,72 @@
 export function generatePrimSteps(nodes, edges) {
   const steps = [];
-  const visited = ['0'];
-  const mstEdgeIds = [];
+  const visited = [nodes[0].id]; 
+  const mstEdges = [];
+  const rejectedEdges = [];
 
-  steps.push({
-    visited: [...visited],
-    mstEdges: [...mstEdgeIds],
-    travelingEdge: null,
-    explanation: 'Welcome! Let\'s find the Minimum Spanning Tree. We start by placing Node 0 into our visited tree component.'
-  });
+  const addStep = (candidates, activeEdge, explanation, pseudoLine, logs) => {
+    steps.push({
+      visited: [...visited], mstEdges: [...mstEdges], rejectedEdges: [...rejectedEdges],
+      candidates: candidates.map(e => e.id), activeEdge: activeEdge ? activeEdge.id : null,
+      explanation, pseudoLine, logs
+    });
+  };
+
+  addStep(
+    [], null, 
+    `BEGINNER GUIDE: Let's build a Minimum Spanning Tree (MST).\n\nWe must connect every single node together using the cheapest possible total weight, without creating any loops.\n\nStep 1: We arbitrarily pick Node ${nodes[0].id} to start. Our "Visited Set" is now { ${nodes[0].id} }. Our goal is to pull every other node into this set.`, 
+    1, [`Initialized. Visited Set: { ${nodes[0].id} }`]
+  );
 
   while (visited.length < nodes.length) {
-    let minEdge = null;
+    const candidates = [];
+    const currentLogs = [];
+    let cycleEdgesFound = [];
 
     for (const edge of edges) {
       const srcVisited = visited.includes(edge.source);
       const tgtVisited = visited.includes(edge.target);
 
-      if ((srcVisited && !tgtVisited) || (!srcVisited && tgtVisited)) {
-        if (!minEdge || edge.weight < minEdge.weight) {
-          minEdge = edge;
-        }
+      if (srcVisited && tgtVisited && !mstEdges.includes(edge.id) && !rejectedEdges.includes(edge.id)) {
+        rejectedEdges.push(edge.id);
+        cycleEdgesFound.push(edge);
+      } 
+      else if ((srcVisited && !tgtVisited) || (!srcVisited && tgtVisited)) {
+        candidates.push(edge);
       }
     }
 
-    if (!minEdge) break;
+    if (cycleEdgesFound.length > 0) {
+      const cycleDetails = cycleEdgesFound.map(e => `${e.source}-${e.target}`).join(', ');
+      addStep(candidates, null, `CYCLE PREVENTION: Look at the red dashed lines (${cycleDetails}). \n\nBoth ends of these paths are already in our Visited Set { ${visited.join(', ')} }. If we use them, we create a redundant loop! We permanently reject them.`, 2, [`Rejected cycle-forming paths: ${cycleDetails}`]);
+    }
 
-    steps.push({
-      visited: [...visited],
-      mstEdges: [...mstEdgeIds],
-      travelingEdge: minEdge.id,
-      explanation: `Scanning paths connected to our visited tree... We highlight the edge between Node ${minEdge.source} and Node ${minEdge.target} because it holds the lowest weight (${minEdge.weight}).`
-    });
+    if (candidates.length === 0) break;
+
+    const candidateDetails = candidates.map(e => `${e.source}-${e.target} (wt: ${e.weight})`).join('\n• ');
+    addStep(candidates, null, `EVALUATING CANDIDATES: We look for paths connecting our Visited Set to unvisited nodes. \n\nWe found ${candidates.length} valid paths (shown in dashed blue):\n• ${candidateDetails}\n\nWhich one should we pick?`, 2, [`Evaluating ${candidates.length} candidate paths.`]);
+
+    candidates.sort((a, b) => a.weight - b.weight);
+    const minEdge = candidates[0];
+    
+    addStep(candidates, minEdge, `GREEDY DECISION: We compare the weights of all valid candidate paths. \n\nThe lowest weight is ${minEdge.weight} on path ${minEdge.source}-${minEdge.target}. \n\nBecause Prim's is a "Greedy" algorithm, it doesn't overthink. It simply takes the absolute lowest available valid path right now.`, 3, [`Selected path ${minEdge.source}-${minEdge.target} as minimum weight (${minEdge.weight}).`]);
 
     const nextNode = visited.includes(minEdge.source) ? minEdge.target : minEdge.source;
     visited.push(nextNode);
-    mstEdgeIds.push(minEdge.id);
+    mstEdges.push(minEdge.id);
 
-    steps.push({
-      visited: [...visited],
-      mstEdges: [...mstEdgeIds],
-      travelingEdge: null,
-      explanation: `The path traveling to Node ${nextNode} is complete. Node ${nextNode} is now added to our growing tree network.`
-    });
+    addStep(candidates, null, `SUCCESS: We secure the path ${minEdge.source}-${minEdge.target}. \n\nNode ${nextNode} is now officially part of our tree! Our Visited Set grows. We will repeat this cycle until all nodes are connected.`, 4, [`Added Node ${nextNode} to Visited Set.`]);
   }
 
-  steps.push({
-    visited: [...visited],
-    mstEdges: [...mstEdgeIds],
-    travelingEdge: null,
-    explanation: 'Awesome! Every node has been safely reached with the absolute lowest possible total connection cost. The lesson is complete.'
-  });
+  addStep([], null, "ALGORITHM COMPLETE: \n\nNotice how every node is connected, yet there are absolutely no loops. We have found the most efficient possible layout for this network.", 5, ["MST mapping successfully completed."]);
 
   return steps;
 }
+
+export const pseudocode = [
+  { line: 1, text: "Initialize MST with a starting node." },
+  { line: 2, text: "Identify all candidate edges (visited ↔ unvisited). Reject cycle paths." },
+  { line: 3, text: "Greedily pick the candidate with the minimum weight." },
+  { line: 4, text: "Add the chosen edge and node to the MST." },
+  { line: 5, text: "Repeat until all nodes are connected." }
+];

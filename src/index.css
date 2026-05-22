@@ -6,4 +6,29 @@ html, body, #root {
   margin: 0;
   padding: 0;
   height: 100%;
+  background-color: #f8fafc;
+}
+
+/* Custom UI animations for EdTech feel */
+@keyframes scanningPulse {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.8)); }
+  50% { opacity: 0.5; filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.3)); }
+}
+
+.edge-scanning path {
+  stroke-dasharray: 5 5;
+  animation: scanningPulse 1.5s infinite ease-in-out;
+}
+
+.edge-candidate path {
+  stroke-dasharray: 8 8;
+  animation: flow 1s linear infinite;
+}
+
+@keyframes flow {
+  to { stroke-dashoffset: -16; }
+}
+
+.react-flow__node {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
